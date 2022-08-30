@@ -1,0 +1,117 @@
+version: "3.9"
+
+services:
+  minio:
+    image: quay.io/minio/minio
+    command: server --console-address ":9001" /data
+    ports:
+    - 9000:9000
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+      MINIO_SERVER_URL: "http://minio:9000"
+      MINIO_REGION_NAME: local
+      MINIO_DOMAIN: minio
+    volumes:
+    - ./volumes/minio:/data
+
+  redpanda0:
+    image: docker.vectorized.io/vectorized/redpanda:v22.2.2
+    command:
+    - redpanda start
+    - --smp 1
+    - --memory 512M
+    - --reserve-memory 0M
+    - --overprovisioned
+    - --node-id 0
+    - --check=false
+    - --set redpanda.auto_create_topics_enabled=false
+    - --kafka-addr INSIDE://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+    - --advertise-kafka-addr INSIDE://redpanda0:29092,OUTSIDE://localhost:9092
+    - --pandaproxy-addr INSIDE://0.0.0.0:28082,OUTSIDE://0.0.0.0:8082
+    - --advertise-pandaproxy-addr INSIDE://redpanda0:28082,OUTSIDE://localhost:8082
+    - --rpc-addr 0.0.0.0:33145
+    - --advertise-rpc-addr redpanda0:33145
+    - --set redpanda.cloud_storage_enabled=true
+    - --set redpanda.cloud_storage_region=local
+    - --set redpanda.cloud_storage_access_key=minio
+    - --set redpanda.cloud_storage_secret_key=minio123
+    - --set redpanda.cloud_storage_api_endpoint=minio
+    - --set redpanda.cloud_storage_api_endpoint_port=9000
+    - --set redpanda.cloud_storage_disable_tls=true
+    - --set redpanda.cloud_storage_bucket=redpanda
+    - --set redpanda.cloud_storage_segment_max_upload_interval_sec=30
+    - --kernel-page-cache 1
+    ports:
+    - 9092:9092
+    - 9644:9644
+    volumes:
+    - ./volumes/redpanda0:/var/lib/redpanda/data
+
+  redpanda1:
+    image: docker.vectorized.io/vectorized/redpanda:v22.2.2
+    command:
+    - redpanda start
+    - --smp 1
+    - --memory 512M
+    - --reserve-memory 0M
+    - --overprovisioned
+    - --node-id 1
+    - --seeds redpanda0:33145,redpanda2:33145
+    - --check=false
+    - --set redpanda.auto_create_topics_enabled=false
+    - --kafka-addr INSIDE://0.0.0.0:29093,OUTSIDE://0.0.0.0:9093
+    - --advertise-kafka-addr INSIDE://redpanda1:29093,OUTSIDE://localhost:9093
+    - --pandaproxy-addr INSIDE://0.0.0.0:28083,OUTSIDE://0.0.0.0:8083
+    - --advertise-pandaproxy-addr INSIDE://redpanda1:28083,OUTSIDE://localhost:8083
+    - --rpc-addr 0.0.0.0:33145
+    - --advertise-rpc-addr redpanda1:33145
+    - --set redpanda.cloud_storage_enabled=true
+    - --set redpanda.cloud_storage_region=local
+    - --set redpanda.cloud_storage_access_key=minio
+    - --set redpanda.cloud_storage_secret_key=minio123
+    - --set redpanda.cloud_storage_api_endpoint=minio
+    - --set redpanda.cloud_storage_api_endpoint_port=9000
+    - --set redpanda.cloud_storage_disable_tls=true
+    - --set redpanda.cloud_storage_bucket=redpanda
+    - --set redpanda.cloud_storage_segment_max_upload_interval_sec=30
+    - --kernel-page-cache 1
+    ports:
+    - 9093:9093
+    - 9645:9644
+    volumes:
+    - ./volumes/redpanda1:/var/lib/redpanda/data
+
+  redpanda2:
+    image: docker.vectorized.io/vectorized/redpanda:v22.2.2
+    command:
+    - redpanda start
+    - --smp 1
+    - --memory 512M
+    - --reserve-memory 0M
+    - --overprovisioned
+    - --node-id 2
+    - --seeds redpanda0:33145,redpanda1:33145
+    - --check=false
+    - --set redpanda.auto_create_topics_enabled=false
+    - --kafka-addr INSIDE://0.0.0.0:29094,OUTSIDE://0.0.0.0:9094
+    - --advertise-kafka-addr INSIDE://redpanda2:29094,OUTSIDE://localhost:9094
+    - --pandaproxy-addr INSIDE://0.0.0.0:28084,OUTSIDE://0.0.0.0:8084
+    - --advertise-pandaproxy-addr INSIDE://redpanda2:28084,OUTSIDE://localhost:8084
+    - --rpc-addr 0.0.0.0:33145
+    - --advertise-rpc-addr redpanda2:33145
+    - --set redpanda.cloud_storage_enabled=true
+    - --set redpanda.cloud_storage_region=local
+    - --set redpanda.cloud_storage_access_key=minio
+    - --set redpanda.cloud_storage_secret_key=minio123
+    - --set redpanda.cloud_storage_api_endpoint=minio
+    - --set redpanda.cloud_storage_api_endpoint_port=9000
+    - --set redpanda.cloud_storage_disable_tls=true
+    - --set redpanda.cloud_storage_bucket=redpanda
+    - --set redpanda.cloud_storage_segment_max_upload_interval_sec=30
+    - --kernel-page-cache 1
+    ports:
+    - 9094:9094
+    - 9646:9644
+    volumes:
+    - ./volumes/redpanda2:/var/lib/redpanda/data
